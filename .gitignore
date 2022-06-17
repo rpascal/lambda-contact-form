@@ -1,0 +1,6 @@
+bootstrap
+bootstrap.zip
+bootstrap.build_artifacts.txt
+.gradle/
+build/
+.aws-sam
