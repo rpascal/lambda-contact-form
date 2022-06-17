@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for Contact Form Function
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 20
+
+Resources:
+  ContactFormFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ../
+      PackageType: Zip
+      FunctionName: ContactFormLambda
+      Runtime: provided
+      Handler: fake.handler
+      Policies:
+        - AmazonS3FullAccess
+        - AmazonSESFullAccess
+      MemorySize: 512
+      Environment:
+        Variables:
+      Events:
+        HttpApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+    Metadata:
+      BuildMethod: makefile
+  HttpApi: #https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-httpapi.html
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:  #For more indept https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        AllowOrigins:
+          - "http://localhost:8100" # For running Ionic Locally
+          - "http://localhost:4200" # For running Ionic Locally
+          # AWS is refusing to add below, says invalid format
+          # - "capacitor://localhost" # For Ionic iOS, https://ionicframework.com/docs/troubleshooting/cors#capacitor
+          - "http://localhost" # For Ionic Android
+          - "https://jook.app"
+        AllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+      AccessLogSettings:
+        DestinationArn: !GetAtt AccessLogs.Arn
+        Format: $context.requestId
+
+  AccessLogs:
+    Type: AWS::Logs::LogGroup
+
+  AppLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ryandpascal-contact-form-app-logs
+
+Outputs:
+  ContactFormFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt ContactFormFunction.Arn
+  ContactFormFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt ContactFormFunctionRole.Arn
+  HttpApiUrl:
+    Description: URL of your API endpoint
+    Value:
+      Fn::Sub: 'https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/'
+  HttpApiId:
+    Description: Api id of HttpApi
+    Value:
+      Ref: HttpApi

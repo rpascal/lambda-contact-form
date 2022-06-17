@@ -1,0 +1,19 @@
+{
+  "resources": [
+    {
+      "pattern": ".*\\.xml$"
+    },
+    {
+      "pattern": ".*\\.json$"
+    },
+    {
+      "pattern": ".*\\.properties$"
+    },
+    {
+      "pattern": ".*\\.txt$"
+    },
+    {
+      "pattern": "org\\.apache\\.lucene.*$"
+    }
+  ]
+}

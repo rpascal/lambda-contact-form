@@ -56,7 +56,7 @@ shadowJar {
 
 }
 
-task runMockPrebidLambdaServer(type: Exec) {
+task runMockContactFormLambdaServer(type: Exec) {
     dependsOn build
     group = "Execution"
     description = "Run a mock lambda server"
