@@ -21,8 +21,6 @@ Resources:
         - AmazonS3FullAccess
         - AmazonSESFullAccess
       MemorySize: 512
-      Environment:
-        Variables:
       Events:
         HttpApi:
           Type: HttpApi
@@ -37,8 +35,6 @@ Resources:
         AllowMethods:
           - GET
           - POST
-          - PUT
-          - DELETE
         AllowOrigins:
           - "http://localhost:8100" # For running Ionic Locally
           - "http://localhost:4200" # For running Ionic Locally
@@ -46,6 +42,7 @@ Resources:
           # - "capacitor://localhost" # For Ionic iOS, https://ionicframework.com/docs/troubleshooting/cors#capacitor
           - "http://localhost" # For Ionic Android
           - "https://jook.app"
+          - "https://ryandpascal.com"
         AllowHeaders:
           - "Content-Type"
           - "Authorization"
@@ -55,11 +52,6 @@ Resources:
 
   AccessLogs:
     Type: AWS::Logs::LogGroup
-
-  AppLogsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: ryandpascal-contact-form-app-logs
 
 Outputs:
   ContactFormFunction:

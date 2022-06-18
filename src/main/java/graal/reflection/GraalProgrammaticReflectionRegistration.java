@@ -1,5 +1,6 @@
 package graal.reflection;
 
+import com.coldbrewcode.contact.model.ContactFormRequestBody;
 import com.oracle.svm.core.annotate.AutomaticFeature;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
@@ -23,7 +24,7 @@ public class GraalProgrammaticReflectionRegistration implements Feature {
      * @JsonProperty("")
      */
     private static final List<Class<?>> classesWithoutZeroArgConstructor = Arrays.asList(
-
+            ContactFormRequestBody.class
     );
 
 
