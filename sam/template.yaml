@@ -21,6 +21,9 @@ Resources:
         - AmazonS3FullAccess
         - AmazonSESFullAccess
       MemorySize: 512
+      Environment:
+          Variables:
+            NO_REPLY_EMAIL_ADDRESS: "no-reply@localwebdevs.com"
       Events:
         HttpApi:
           Type: HttpApi
@@ -36,13 +39,15 @@ Resources:
           - GET
           - POST
         AllowOrigins:
-          - "http://localhost:8100" # For running Ionic Locally
-          - "http://localhost:4200" # For running Ionic Locally
+#          - "http://localhost:8100" # For running Ionic Locally
+#          - "http://localhost:4200" # For running Ionic Locally
           # AWS is refusing to add below, says invalid format
           # - "capacitor://localhost" # For Ionic iOS, https://ionicframework.com/docs/troubleshooting/cors#capacitor
-          - "http://localhost" # For Ionic Android
+#          - "http://localhost" # For Ionic Android
           - "https://jook.app"
           - "https://ryandpascal.com"
+          - "https://www.localwebdevs.com"
+          - "https://anotherdumbshow.com/"
         AllowHeaders:
           - "Content-Type"
           - "Authorization"

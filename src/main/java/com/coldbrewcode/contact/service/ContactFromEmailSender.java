@@ -2,6 +2,7 @@ package com.coldbrewcode.contact.service;
 
 import com.coldbrewcode.aws.ses.SesRawEmailSender;
 import com.coldbrewcode.aws.ses.mime.MimeBodyPartCreator;
+import com.coldbrewcode.contact.config.ConfigRepo;
 import com.coldbrewcode.contact.model.ContactFormRequestBody;
 import io.vavr.control.Try;
 import jakarta.activation.CommandMap;
@@ -9,6 +10,7 @@ import jakarta.activation.MailcapCommandMap;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +34,8 @@ public class ContactFromEmailSender {
         mc.addMailcap("message/rfc822;; x-java-content- handler=com.sun.mail.handlers.message_rfc822");
     }
 
-    private static final String NO_REPLY_EMAIL_ADDRESS = "no-reply@ryandpascal.com";
-
     private final SesRawEmailSender sesRawEmailSender;
+    private final ConfigRepo configRepo;
 
     public void sendContactForm(ContactFormRequestBody requestBody) throws MessagingException {
         sendEmail(requestBody).getOrElseThrow(e -> {
@@ -48,7 +49,16 @@ public class ContactFromEmailSender {
         MimeMessage message = new MimeMessage(session);
 
         message.setSubject(requestBody.getSubject());
-        message.setFrom(NO_REPLY_EMAIL_ADDRESS);
+        message.setFrom(configRepo.getFromEmailAddress());
+
+        if (!requestBody.getReplyToAddresses().isEmpty()) {
+
+            final InternetAddress[] replyToArray = new InternetAddress[requestBody.getReplyToAddresses().size()];
+            for (String address : requestBody.getReplyToAddresses()) {
+                replyToArray[0] = InternetAddress.parse(address)[0];
+            }
+            message.setReplyTo(replyToArray);
+        }
 
         for (String address : requestBody.getToAddresses()) {
             message.addRecipients(Message.RecipientType.TO, address);

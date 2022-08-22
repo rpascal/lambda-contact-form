@@ -11,6 +11,9 @@ import java.util.List;
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
 public class ContactFormRequestBody {
 
+    @JsonProperty("replyToAddresses")
+    private final List<String> replyToAddresses;
+
     @JsonProperty("toAddresses")
     private final List<String> toAddresses;
 
