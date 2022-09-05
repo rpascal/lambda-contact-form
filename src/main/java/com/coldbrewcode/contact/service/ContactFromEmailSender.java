@@ -84,12 +84,17 @@ public class ContactFromEmailSender {
          */
 
         MimeMultipart msg = new MimeMultipart("mixed");
-        msg.addBodyPart(MimeBodyPartCreator.html(requestBody.getBody()));
+        msg.addBodyPart(
+                MimeBodyPartCreator.html(
+                        requestBody
+                                .getBody()
+                                .replace("\n", "<br />")
+                )
+        );
 
         message.setContent(msg);
 
         return sesRawEmailSender.sendRawEmail(message);
     }
-
 
 }

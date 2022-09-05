@@ -63,7 +63,8 @@ public class ContactFormRequestHandler implements LambdaApiGatewayRequestHandler
     private ApiResponse handleNonCorsRequest(final ApiRequest request) {
         log.info("Handling request: " + request.path());
         return Match(request.route()).of(
-                Case($Tuple2($(HttpMethod.POST), $("/contact")), sendContactFormEmail(request.getBodyAs(ContactFormRequestBody.class)).get()),
+                Case($Tuple2($(HttpMethod.POST), $("/api/contact")),  () -> sendContactFormEmail(request.getBodyAs(ContactFormRequestBody.class)).get()),
+                Case($Tuple2($(HttpMethod.POST), $("/contact")),  () -> sendContactFormEmail(request.getBodyAs(ContactFormRequestBody.class)).get()),
                 Case($(), () -> {
                     throw NoHandlerFoundException.create(request);
                 })
@@ -72,6 +73,7 @@ public class ContactFormRequestHandler implements LambdaApiGatewayRequestHandler
 
     private Try<ApiResponse> sendContactFormEmail(ContactFormRequestBody contactFormRequestBody) {
         return Try.of(() -> {
+            log.info("Attempting to send contact form email");
             contactFromEmailSender.sendContactForm(contactFormRequestBody);
             return ApiResponse.ok();
         });
