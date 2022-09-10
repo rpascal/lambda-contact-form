@@ -72,11 +72,9 @@ public class ContactFormRequestHandler implements LambdaApiGatewayRequestHandler
     }
 
     private Try<ApiResponse> sendContactFormEmail(ContactFormRequestBody contactFormRequestBody) {
-        return Try.of(() -> {
-            log.info("Attempting to send contact form email");
-            contactFromEmailSender.sendContactForm(contactFormRequestBody);
-            return ApiResponse.ok();
-        });
+        return contactFromEmailSender
+                .sendContactForm(contactFormRequestBody)
+                .map(v -> ApiResponse.ok());
     }
 
     private ApiResponse cors() {

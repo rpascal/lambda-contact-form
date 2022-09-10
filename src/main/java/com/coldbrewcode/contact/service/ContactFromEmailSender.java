@@ -3,19 +3,22 @@ package com.coldbrewcode.contact.service;
 import com.coldbrewcode.aws.ses.SesRawEmailSender;
 import com.coldbrewcode.aws.ses.mime.MimeBodyPartCreator;
 import com.coldbrewcode.contact.config.ConfigRepo;
+import com.coldbrewcode.contact.model.ContactFormAttachment;
 import com.coldbrewcode.contact.model.ContactFormRequestBody;
+import com.coldbrewcode.dataurl.Base64DataUrl;
 import io.vavr.control.Try;
 import jakarta.activation.CommandMap;
 import jakarta.activation.MailcapCommandMap;
 import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.*;
 import java.util.Properties;
 
 @RequiredArgsConstructor
@@ -37,64 +40,69 @@ public class ContactFromEmailSender {
     private final SesRawEmailSender sesRawEmailSender;
     private final ConfigRepo configRepo;
 
-    public void sendContactForm(ContactFormRequestBody requestBody) throws MessagingException {
-        sendEmail(requestBody).getOrElseThrow(e -> {
-            log.error("Failed to send contact form email", e);
-            return new RuntimeException(e);
-        });
+    public Try<Void> sendContactForm(ContactFormRequestBody requestBody) {
+        return buildMessage(requestBody)
+                .flatMap(mimeMessage -> sesRawEmailSender.sendRawEmail(mimeMessage));
     }
 
-    private Try<Void> sendEmail(ContactFormRequestBody requestBody) throws MessagingException {
-        Session session = Session.getDefaultInstance(new Properties());
-        MimeMessage message = new MimeMessage(session);
+    private Try<MimeMessage> buildMessage(ContactFormRequestBody requestBody) {
+        return Try.of(() -> {
+            Session session = Session.getDefaultInstance(new Properties());
+            MimeMessage message = new MimeMessage(session);
 
-        message.setSubject(requestBody.getSubject());
-        message.setFrom(configRepo.getFromEmailAddress());
+            message.setSubject(requestBody.getSubject());
+            message.setFrom(configRepo.getFromEmailAddress());
 
-        if (!requestBody.getReplyToAddresses().isEmpty()) {
+            if (!requestBody.getReplyToAddresses().isEmpty()) {
 
-            final InternetAddress[] replyToArray = new InternetAddress[requestBody.getReplyToAddresses().size()];
-            for (String address : requestBody.getReplyToAddresses()) {
-                replyToArray[0] = InternetAddress.parse(address)[0];
+                final InternetAddress[] replyToArray = new InternetAddress[requestBody.getReplyToAddresses().size()];
+                for (String address : requestBody.getReplyToAddresses()) {
+                    replyToArray[0] = InternetAddress.parse(address)[0];
+                }
+                message.setReplyTo(replyToArray);
             }
-            message.setReplyTo(replyToArray);
-        }
 
-        for (String address : requestBody.getToAddresses()) {
-            message.addRecipients(Message.RecipientType.TO, address);
-        }
+            for (String address : requestBody.getToAddresses()) {
+                message.addRecipients(Message.RecipientType.TO, address);
+            }
 
-        for (String address : requestBody.getCcAddresses()) {
-            message.addRecipients(Message.RecipientType.CC, address);
-        }
+            for (String address : requestBody.getCcAddresses()) {
+                message.addRecipients(Message.RecipientType.CC, address);
+            }
 
-        for (String address : requestBody.getBccAddresses()) {
-            message.addRecipients(Message.RecipientType.BCC, address);
-        }
+            for (String address : requestBody.getBccAddresses()) {
+                message.addRecipients(Message.RecipientType.BCC, address);
+            }
 
-
-        /*
-            Email does not like .js so using .txt
-            MimeBodyPart beforeAttachment = MimeBodyPartCreator.attachment(adUnitsBeforePath.toFile(), "before.txt");
-            MimeBodyPart afterAttachment = MimeBodyPartCreator.attachment(adUnitsAfterPath.toFile(), "after.txt");
             MimeMultipart msg = new MimeMultipart("mixed");
-            msg.addBodyPart(MimeBodyPartCreator.html(bodyHTML));
-            msg.addBodyPart(beforeAttachment);
-            msg.addBodyPart(afterAttachment);
-         */
 
-        MimeMultipart msg = new MimeMultipart("mixed");
-        msg.addBodyPart(
-                MimeBodyPartCreator.html(
-                        requestBody
-                                .getBody()
-                                .replace("\n", "<br />")
-                )
-        );
+            // TODO validate max file size
+            for (ContactFormAttachment attachment : requestBody.getAttachments()) {
+                final var data = Base64DataUrl.fromUrl(attachment.getBase64DataUrl());
+                final File tempFile = File.createTempFile(
+                        "ContactFromEmailSender",
+                        attachment.getFileNameWithAttachment(),
+                        null
+                );
+                final FileOutputStream fos = new FileOutputStream(tempFile);
+                fos.write(data.getData());
+                fos.close();
 
-        message.setContent(msg);
+                final MimeBodyPart bodyPartAttachment = MimeBodyPartCreator.attachment(tempFile, "before.txt");
+                msg.addBodyPart(bodyPartAttachment);
+            }
 
-        return sesRawEmailSender.sendRawEmail(message);
+            msg.addBodyPart(
+                    MimeBodyPartCreator.html(
+                            requestBody
+                                    .getBody()
+                                    .replace("\n", "<br />")
+                    )
+            );
+
+            message.setContent(msg);
+            return message;
+        });
     }
 
 }

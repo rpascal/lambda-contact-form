@@ -29,4 +29,7 @@ public class ContactFormRequestBody {
     @JsonProperty("body")
     private final String body;
 
+    @JsonProperty("attachments")
+    private final List<ContactFormAttachment> attachments;
+
 }
