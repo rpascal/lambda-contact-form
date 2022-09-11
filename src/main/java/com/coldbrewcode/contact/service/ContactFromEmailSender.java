@@ -54,7 +54,6 @@ public class ContactFromEmailSender {
             message.setFrom(configRepo.getFromEmailAddress());
 
             if (!requestBody.getReplyToAddresses().isEmpty()) {
-
                 final InternetAddress[] replyToArray = new InternetAddress[requestBody.getReplyToAddresses().size()];
                 for (String address : requestBody.getReplyToAddresses()) {
                     replyToArray[0] = InternetAddress.parse(address)[0];
@@ -76,19 +75,9 @@ public class ContactFromEmailSender {
 
             MimeMultipart msg = new MimeMultipart("mixed");
 
-            // TODO validate max file size
             for (ContactFormAttachment attachment : requestBody.getAttachments()) {
-                final var data = Base64DataUrl.fromUrl(attachment.getBase64DataUrl());
-                final File tempFile = File.createTempFile(
-                        "ContactFromEmailSender",
-                        attachment.getFileNameWithAttachment(),
-                        null
-                );
-                final FileOutputStream fos = new FileOutputStream(tempFile);
-                fos.write(data.getData());
-                fos.close();
-
-                final MimeBodyPart bodyPartAttachment = MimeBodyPartCreator.attachment(tempFile, "before.txt");
+                final File attachmentFile = readAndValidateAttachment(attachment);
+                final MimeBodyPart bodyPartAttachment = MimeBodyPartCreator.attachment(attachmentFile, attachment.getFileNameWithAttachment());
                 msg.addBodyPart(bodyPartAttachment);
             }
 
@@ -103,6 +92,32 @@ public class ContactFromEmailSender {
             message.setContent(msg);
             return message;
         });
+    }
+
+    private File readAndValidateAttachment(ContactFormAttachment attachment) throws IOException {
+        final var data = Base64DataUrl.fromUrl(attachment.getBase64DataUrl());
+
+        final File tempFile = File.createTempFile(
+                "ContactFromEmailSender",
+                attachment.getFileNameWithAttachment(),
+                null
+        );
+        final FileOutputStream fos = new FileOutputStream(tempFile);
+        fos.write(data.getData());
+        fos.close();
+
+        configRepo.getMaxAttachmentSizeBytes().ifPresent(maxAttachmentSize -> {
+            if (tempFile.length() > maxAttachmentSize) {
+                throw new IllegalArgumentException("Invalid attachment, too big.");
+            }
+        });
+
+        configRepo.getValidAttachmentMediaTypes().ifPresent(validMediaTypes -> {
+            if (!validMediaTypes.contains(data.getMediaType())) {
+                throw new IllegalArgumentException("Invalid attachment, unsupported media type: " + data.getMediaType());
+            }
+        });
+        return tempFile;
     }
 
 }

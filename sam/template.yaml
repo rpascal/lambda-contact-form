@@ -24,6 +24,8 @@ Resources:
       Environment:
           Variables:
             NO_REPLY_EMAIL_ADDRESS: "no-reply@localwebdevs.com"
+            MAX_ATTACHMENT_SIZE_BYTES: "2097152"
+            VALID_ATTACHMENT_MEDIA_TYPES: "image/jpeg,image/png"
       Events:
         HttpApi:
           Type: HttpApi
